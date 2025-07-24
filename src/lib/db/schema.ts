@@ -12,7 +12,6 @@ export const lessons = pgTable("lessons", {
 export const resources = pgTable("resources", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  url: text("url").notNull(),
   fileType: text("file_type").notNull(),
   lessonId: integer("lesson_id")
     .references(() => lessons.id)

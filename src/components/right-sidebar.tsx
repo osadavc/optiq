@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FileText, Bot, Mic, MicOff, Upload, MoreVertical, Download, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getResourcesByLessonId, createResource } from "@/lib/actions/resources";
 
 interface RightSidebarProps {
   className?: string;
@@ -15,63 +17,27 @@ interface RightSidebarProps {
 type TabType = "resources" | "ai-assistant";
 
 interface Resource {
-  id: string;
+  id: number;
   name: string;
-  type: "pdf" | "doc" | "txt" | "ppt";
-  size: string;
-  uploadedAt: string;
+  fileType: string;
+  lessonId: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const sampleResources: Resource[] = [
-  {
-    id: "1",
-    name: "Introduction to Machine Learning.pdf",
-    type: "pdf",
-    size: "2.4 MB",
-    uploadedAt: "2 hours ago"
-  },
-  {
-    id: "2", 
-    name: "Database Design Principles.pdf",
-    type: "pdf",
-    size: "1.8 MB",
-    uploadedAt: "1 day ago"
-  },
-  {
-    id: "3",
-    name: "React Advanced Patterns.pdf", 
-    type: "pdf",
-    size: "3.2 MB",
-    uploadedAt: "3 days ago"
-  },
-  {
-    id: "4",
-    name: "Data Structures Notes.txt",
-    type: "txt", 
-    size: "156 KB",
-    uploadedAt: "1 week ago"
-  },
-  {
-    id: "5",
-    name: "Algorithm Analysis Slides.ppt",
-    type: "ppt",
-    size: "4.1 MB", 
-    uploadedAt: "2 weeks ago"
-  }
-];
 
-const getFileTypeIcon = (type: Resource["type"]) => {
-  switch (type) {
-    case "pdf":
-      return <FileText className="h-4 w-4 text-red-500" />;
-    case "doc":
-      return <FileText className="h-4 w-4 text-blue-500" />;
-    case "txt":
-      return <FileText className="h-4 w-4 text-gray-500" />;
-    case "ppt":
-      return <FileText className="h-4 w-4 text-orange-500" />;
-    default:
-      return <FileText className="h-4 w-4 text-gray-500" />;
+const getFileTypeIcon = (fileType: string) => {
+  const lowerType = fileType.toLowerCase();
+  if (lowerType.includes("pdf")) {
+    return <FileText className="h-4 w-4 text-red-500" />;
+  } else if (lowerType.includes("doc")) {
+    return <FileText className="h-4 w-4 text-blue-500" />;
+  } else if (lowerType.includes("txt")) {
+    return <FileText className="h-4 w-4 text-gray-500" />;
+  } else if (lowerType.includes("ppt") || lowerType.includes("powerpoint")) {
+    return <FileText className="h-4 w-4 text-orange-500" />;
+  } else {
+    return <FileText className="h-4 w-4 text-gray-500" />;
   }
 };
 
@@ -79,6 +45,13 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [isLoadingResources, setIsLoadingResources] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const searchParams = useSearchParams();
+  const selectedLessonId = searchParams.get('lesson');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -87,6 +60,100 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   const isOpen = activeTab !== null;
+
+  // Fetch resources when lesson changes
+  useEffect(() => {
+    const fetchResources = async () => {
+      if (selectedLessonId) {
+        setIsLoadingResources(true);
+        try {
+          const lessonResources = await getResourcesByLessonId(parseInt(selectedLessonId));
+          setResources(lessonResources);
+        } catch (error) {
+          console.error("Failed to fetch resources:", error);
+          setResources([]);
+        } finally {
+          setIsLoadingResources(false);
+        }
+      } else {
+        setResources([]);
+      }
+    };
+
+    fetchResources();
+  }, [selectedLessonId]);
+
+  // Helper function to format date
+  const formatDate = (date: Date) => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      if (diffInHours === 0) {
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`;
+      }
+      return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+    } else if (diffInDays === 1) {
+      return '1 day ago';
+    } else if (diffInDays < 7) {
+      return `${diffInDays} days ago`;
+    } else if (diffInDays < 30) {
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      return diffInWeeks === 1 ? '1 week ago' : `${diffInWeeks} weeks ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedLessonId) return;
+
+    // Validate file type (only PDFs allowed)
+    if (file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', file.name);
+      formData.append('fileType', file.type);
+      formData.append('lessonId', selectedLessonId);
+
+      const result = await createResource(formData);
+      
+      if (result.success) {
+        // Refresh resources list
+        const updatedResources = await getResourcesByLessonId(parseInt(selectedLessonId));
+        setResources(updatedResources);
+      } else {
+        console.error('Upload failed:', result.error);
+        alert('Failed to upload file');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleUploadClick = () => {
+    if (!selectedLessonId) {
+      alert('Please select a lesson first');
+      return;
+    }
+    fileInputRef.current?.click();
+  };
 
   const handleTabClick = (tab: TabType) => {
     if (activeTab === tab) {
@@ -202,75 +269,110 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-600 tracking-wide">Resources</h3>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 p-0" 
+                  onClick={handleUploadClick}
+                  disabled={isUploading}
+                >
                   <Upload className="h-3 w-3" />
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </div>
             </div>
             
             {/* Resources List */}
             <div className="flex-1 overflow-auto">
               <div className="p-3 space-y-2">
-                {sampleResources.map((resource) => (
-                  <div
-                    key={resource.id}
-                    className="group flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex-shrink-0">
-                      {getFileTypeIcon(resource.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-card-foreground truncate">
-                          {resource.name}
-                        </p>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <MoreVertical className="h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem>
-                              <Eye className="h-3 w-3 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="h-3 w-3 mr-2" />
-                              Download
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-muted-foreground">
-                          {resource.size}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {resource.uploadedAt}
-                        </p>
-                      </div>
-                    </div>
+                {isLoadingResources ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-sm text-muted-foreground">Loading resources...</p>
                   </div>
-                ))}
+                ) : !selectedLessonId ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">Select a lesson to view resources</p>
+                  </div>
+                ) : resources.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No resources yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Upload files to get started</p>
+                  </div>
+                ) : (
+                  resources.map((resource) => (
+                    <div
+                      key={resource.id}
+                      className="group flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex-shrink-0">
+                        {getFileTypeIcon(resource.fileType)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-card-foreground truncate">
+                            {resource.name}
+                          </p>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem>
+                                <Eye className="h-3 w-3 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Download className="h-3 w-3 mr-2" />
+                                Download
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {resource.fileType}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(resource.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
               
               {/* Upload Prompt */}
-              <div className="p-4 border-t border-border">
-                <div className="text-center space-y-2">
-                  <div className="w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
+              {selectedLessonId && (
+                <div className="p-4 border-t border-border">
+                  <div 
+                    className="text-center space-y-2 cursor-pointer hover:bg-muted/50 rounded-lg p-4 transition-colors"
+                    onClick={handleUploadClick}
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center">
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isUploading ? 'Uploading...' : 'Click to upload PDF resources'}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Drag files here or click upload to add more resources
-                  </p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         );

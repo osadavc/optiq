@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -42,10 +43,20 @@ type AppSidebarProps = {
 export const AppSidebar = ({ lessons }: AppSidebarProps) => {
   const [isNewLessonOpen, setIsNewLessonOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createLesson, null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleFormSubmit = () => {
     setIsNewLessonOpen(false);
   };
+
+  const handleLessonClick = (lessonId: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('lesson', lessonId.toString());
+    router.push(`/?${params.toString()}`);
+  };
+
+  const selectedLessonId = searchParams.get('lesson');
 
   return (
     <Sidebar collapsible="icon">
@@ -133,17 +144,24 @@ export const AppSidebar = ({ lessons }: AppSidebarProps) => {
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
-              {lessons.map((lesson) => (
-                <SidebarMenuItem key={lesson.id}>
-                  <SidebarMenuButton
-                    className="w-full justify-start hover:bg-gray-100 transition-colors"
-                    onClick={() => console.log(`Clicked ${lesson.name}`)}
-                  >
+              {lessons.map((lesson) => {
+                const isSelected = selectedLessonId === lesson.id.toString();
+                return (
+                  <SidebarMenuItem key={lesson.id}>
+                    <SidebarMenuButton
+                      className={`w-full justify-start transition-colors ${
+                        isSelected 
+                          ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => handleLessonClick(lesson.id)}
+                    >
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>{lesson.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
