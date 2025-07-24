@@ -38,7 +38,7 @@ export const AppSidebar = () => {
   const [isNewLessonOpen, setIsNewLessonOpen] = useState(false);
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <h1 className="text-2xl font-black text-black font-inter">Optiq</h1>
       </SidebarHeader>

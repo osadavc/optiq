@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 
@@ -31,13 +31,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased font-geist-sans`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased font-geist-sans h-full`}
       >
         <SidebarProvider>
           <AppSidebar />
-          <main className="flex-1 overflow-auto">{children}</main>
+          <SidebarInset>
+            {children}
+          </SidebarInset>
           <RightSidebar />
         </SidebarProvider>
       </body>
