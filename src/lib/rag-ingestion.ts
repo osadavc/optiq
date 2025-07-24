@@ -41,10 +41,7 @@ export async function ingestDocument(
 
     // Step 2: Chunk the text
     console.log("Chunking text...");
-    const chunks = chunkText(parsedDoc.content, {
-      chunkSize: 1000,
-      overlap: 200,
-    });
+    const chunks = await chunkText(parsedDoc.content);
 
     if (chunks.length === 0) {
       console.warn(`No chunks created from ${fileName}`);
