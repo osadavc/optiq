@@ -24,18 +24,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Plus } from "lucide-react";
+import { createLesson } from "@/lib/actions/lessons";
+import { useActionState } from "react";
 
-const lessons = [
-  {
-    title: "Database",
-  },
-  {
-    title: "Programming",
-  },
-];
+type Lesson = {
+  id: number;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-export const AppSidebar = () => {
+type AppSidebarProps = {
+  lessons: Lesson[];
+};
+
+export const AppSidebar = ({ lessons }: AppSidebarProps) => {
   const [isNewLessonOpen, setIsNewLessonOpen] = useState(false);
+  const [state, formAction, isPending] = useActionState(createLesson, null);
+
+  const handleFormSubmit = () => {
+    setIsNewLessonOpen(false);
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -59,61 +69,78 @@ export const AppSidebar = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Lesson</DialogTitle>
-                  <DialogDescription>
-                    Create a new lesson to organize your study materials.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="lesson-title" className="text-sm font-medium leading-none">
-                      Lesson Title
-                    </label>
-                    <Input
-                      id="lesson-title"
-                      placeholder="Enter lesson title..."
-                      className="w-full"
-                    />
+                <form
+                  action={formAction}
+                  onSubmit={handleFormSubmit}
+                  className="space-y-2"
+                >
+                  <DialogHeader>
+                    <DialogTitle>Add New Lesson</DialogTitle>
+                    <DialogDescription>
+                      Create a new lesson to organize your study materials.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="lesson-name"
+                        className="text-sm font-medium leading-none"
+                      >
+                        Lesson Title
+                      </label>
+                      <Input
+                        id="lesson-name"
+                        name="name"
+                        placeholder="Enter lesson title..."
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="lesson-description"
+                        className="text-sm font-medium leading-none"
+                      >
+                        Description (Optional)
+                      </label>
+                      <Input
+                        id="lesson-description"
+                        name="description"
+                        placeholder="Brief description of the lesson..."
+                        className="w-full"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="lesson-description" className="text-sm font-medium leading-none">
-                      Description (Optional)
-                    </label>
-                    <Input
-                      id="lesson-description"
-                      placeholder="Brief description of the lesson..."
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsNewLessonOpen(false)}
-                    className="mr-2"
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={() => setIsNewLessonOpen(false)}>
-                    Create Lesson
-                  </Button>
-                </DialogFooter>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsNewLessonOpen(false)}
+                      className="mr-2"
+                      disabled={isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isPending}>
+                      {isPending ? "Creating..." : "Create Lesson"}
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {lessons.map((lesson) => (
-                <SidebarMenuItem key={lesson.title}>
+                <SidebarMenuItem key={lesson.id}>
                   <SidebarMenuButton
                     className="w-full justify-start hover:bg-gray-100 transition-colors"
-                    onClick={() => console.log(`Clicked ${lesson.title}`)}
+                    onClick={() => console.log(`Clicked ${lesson.name}`)}
                   >
                     <BookOpen className="mr-2 h-4 w-4" />
-                    <span>{lesson.title}</span>
+                    <span>{lesson.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

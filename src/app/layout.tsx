@@ -4,6 +4,7 @@ import "./globals.css";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
+import { getLessons } from "@/lib/actions/lessons";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,11 +26,13 @@ export const metadata: Metadata = {
   description: "Learning management system",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lessons = await getLessons();
+
   return (
     <html lang="en" className="h-full">
       <body
@@ -37,10 +40,8 @@ export default function RootLayout({
       >
         <div className="flex h-full">
           <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="flex-1 min-w-0">
-              {children}
-            </SidebarInset>
+            <AppSidebar lessons={lessons} />
+            <SidebarInset className="flex-1 min-w-0">{children}</SidebarInset>
           </SidebarProvider>
           <RightSidebar />
         </div>
