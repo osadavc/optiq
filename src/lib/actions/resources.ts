@@ -35,6 +35,7 @@ export async function createResource(formData: FormData) {
         name,
         fileType,
         lessonId,
+        processingStatus: "pending",
       })
       .returning();
 
@@ -42,5 +43,22 @@ export async function createResource(formData: FormData) {
   } catch (error) {
     console.error("Error creating resource:", error);
     return { success: false, error: "Failed to create resource" };
+  }
+}
+
+export async function updateResourceStatus(resourceId: number, status: string) {
+  try {
+    await db
+      .update(resources)
+      .set({ 
+        processingStatus: status,
+        updatedAt: new Date()
+      })
+      .where(eq(resources.id, resourceId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating resource status:", error);
+    return { success: false, error: "Failed to update resource status" };
   }
 }

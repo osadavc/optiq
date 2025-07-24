@@ -13,6 +13,7 @@ export const resources = pgTable("resources", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   fileType: text("file_type").notNull(),
+  processingStatus: text("processing_status").default("pending").notNull(), // pending, processing, completed, error
   lessonId: integer("lesson_id")
     .references(() => lessons.id)
     .notNull(),

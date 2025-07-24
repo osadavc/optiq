@@ -8,6 +8,13 @@
       "when": 1753360846751,
       "tag": "0000_init_database",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1753364534868,
+      "tag": "0001_gifted_shiva",
+      "breakpoints": true
     }
   ]
 }

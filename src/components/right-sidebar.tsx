@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText, Bot, Mic, MicOff, Upload, MoreVertical, Download, Eye } from "lucide-react";
+import { FileText, Bot, Mic, MicOff, Upload, MoreVertical, Download, Eye, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { getResourcesByLessonId, createResource } from "@/lib/actions/resources";
+import { getResourcesByLessonId } from "@/lib/actions/resources";
 
 interface RightSidebarProps {
   className?: string;
@@ -20,6 +19,7 @@ interface Resource {
   id: number;
   name: string;
   fileType: string;
+  processingStatus: string;
   lessonId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -30,14 +30,28 @@ const getFileTypeIcon = (fileType: string) => {
   const lowerType = fileType.toLowerCase();
   if (lowerType.includes("pdf")) {
     return <FileText className="h-4 w-4 text-red-500" />;
-  } else if (lowerType.includes("doc")) {
+  } else if (lowerType.includes("word") || lowerType.includes("docx")) {
     return <FileText className="h-4 w-4 text-blue-500" />;
+  } else if (lowerType.includes("presentation") || lowerType.includes("pptx")) {
+    return <FileText className="h-4 w-4 text-orange-500" />;
   } else if (lowerType.includes("txt")) {
     return <FileText className="h-4 w-4 text-gray-500" />;
-  } else if (lowerType.includes("ppt") || lowerType.includes("powerpoint")) {
-    return <FileText className="h-4 w-4 text-orange-500" />;
   } else {
     return <FileText className="h-4 w-4 text-gray-500" />;
+  }
+};
+
+const getProcessingStatusIcon = (status: string) => {
+  switch (status) {
+    case 'processing':
+      return <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />;
+    case 'completed':
+      return <CheckCircle className="h-3 w-3 text-green-500" />;
+    case 'error':
+      return <AlertCircle className="h-3 w-3 text-red-500" />;
+    case 'pending':
+    default:
+      return <div className="h-3 w-3 rounded-full bg-gray-300" />;
   }
 };
 
@@ -112,28 +126,41 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
     const file = event.target.files?.[0];
     if (!file || !selectedLessonId) return;
 
-    // Validate file type (only PDFs allowed)
-    if (file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed');
+    // Validate file type (PDF, DOCX, PPTX allowed)
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation' // PPTX
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only PDF, DOCX, and PPTX files are allowed');
       return;
     }
 
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append('name', file.name);
-      formData.append('fileType', file.type);
+      formData.append('file', file);
       formData.append('lessonId', selectedLessonId);
 
-      const result = await createResource(formData);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
       
       if (result.success) {
         // Refresh resources list
         const updatedResources = await getResourcesByLessonId(parseInt(selectedLessonId));
         setResources(updatedResources);
+        
+        // Show success message
+        console.log(result.message);
       } else {
         console.error('Upload failed:', result.error);
-        alert('Failed to upload file');
+        alert(`Failed to upload file: ${result.error}`);
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -281,7 +308,7 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.docx,.pptx"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -318,9 +345,19 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-card-foreground truncate">
-                            {resource.name}
-                          </p>
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <p className="text-sm font-medium text-card-foreground truncate">
+                              {resource.name}
+                            </p>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                {getProcessingStatusIcon(resource.processingStatus)}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="capitalize">{resource.processingStatus}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -348,7 +385,7 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                             {resource.fileType}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDate(resource.createdAt)}
+                            {formatDate(new Date(resource.createdAt))}
                           </p>
                         </div>
                       </div>
@@ -368,7 +405,7 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                       <Upload className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {isUploading ? 'Uploading...' : 'Click to upload PDF resources'}
+                      {isUploading ? 'Uploading...' : 'Click to upload PDF, DOCX, or PPTX files'}
                     </p>
                   </div>
                 </div>
