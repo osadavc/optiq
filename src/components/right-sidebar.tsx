@@ -1,17 +1,79 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";
-import { FileText, Bot, Mic, MicOff } from "lucide-react";
+import { FileText, Bot, Mic, MicOff, Upload, MoreVertical, Download, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface RightSidebarProps {
   className?: string;
 }
 
 type TabType = "resources" | "ai-assistant";
+
+interface Resource {
+  id: string;
+  name: string;
+  type: "pdf" | "doc" | "txt" | "ppt";
+  size: string;
+  uploadedAt: string;
+}
+
+const sampleResources: Resource[] = [
+  {
+    id: "1",
+    name: "Introduction to Machine Learning.pdf",
+    type: "pdf",
+    size: "2.4 MB",
+    uploadedAt: "2 hours ago"
+  },
+  {
+    id: "2", 
+    name: "Database Design Principles.pdf",
+    type: "pdf",
+    size: "1.8 MB",
+    uploadedAt: "1 day ago"
+  },
+  {
+    id: "3",
+    name: "React Advanced Patterns.pdf", 
+    type: "pdf",
+    size: "3.2 MB",
+    uploadedAt: "3 days ago"
+  },
+  {
+    id: "4",
+    name: "Data Structures Notes.txt",
+    type: "txt", 
+    size: "156 KB",
+    uploadedAt: "1 week ago"
+  },
+  {
+    id: "5",
+    name: "Algorithm Analysis Slides.ppt",
+    type: "ppt",
+    size: "4.1 MB", 
+    uploadedAt: "2 weeks ago"
+  }
+];
+
+const getFileTypeIcon = (type: Resource["type"]) => {
+  switch (type) {
+    case "pdf":
+      return <FileText className="h-4 w-4 text-red-500" />;
+    case "doc":
+      return <FileText className="h-4 w-4 text-blue-500" />;
+    case "txt":
+      return <FileText className="h-4 w-4 text-gray-500" />;
+    case "ppt":
+      return <FileText className="h-4 w-4 text-orange-500" />;
+    default:
+      return <FileText className="h-4 w-4 text-gray-500" />;
+  }
+};
 
 export const RightSidebar = ({ className }: RightSidebarProps) => {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
@@ -135,8 +197,81 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
     switch (activeTab) {
       case "resources":
         return (
-          <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-600 tracking-wide mb-4">Resources</h3>
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-600 tracking-wide">Resources</h3>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <Upload className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            
+            {/* Resources List */}
+            <div className="flex-1 overflow-auto">
+              <div className="p-3 space-y-2">
+                {sampleResources.map((resource) => (
+                  <div
+                    key={resource.id}
+                    className="group flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex-shrink-0">
+                      {getFileTypeIcon(resource.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-card-foreground truncate">
+                          {resource.name}
+                        </p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem>
+                              <Eye className="h-3 w-3 mr-2" />
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Download className="h-3 w-3 mr-2" />
+                              Download
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-muted-foreground">
+                          {resource.size}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {resource.uploadedAt}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Upload Prompt */}
+              <div className="p-4 border-t border-border">
+                <div className="text-center space-y-2">
+                  <div className="w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Drag files here or click upload to add more resources
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         );
       case "ai-assistant":

@@ -76,38 +76,84 @@ const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
-        </div>
-        <ThreadWelcomeSuggestions />
+        <SubjectMaterialDisplay />
       </div>
     </ThreadPrimitive.Empty>
   );
 };
 
-const ThreadWelcomeSuggestions: FC = () => {
+const SubjectMaterialDisplay: FC = () => {
   return (
-    <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-      <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What is React?"
-        method="replace"
-        autoSend
-      >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What is React?
-        </span>
-      </ThreadPrimitive.Suggestion>
-      <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="Explain TypeScript"
-        method="replace"
-        autoSend
-      >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          Explain TypeScript
-        </span>
-      </ThreadPrimitive.Suggestion>
+    <div className="flex w-full flex-grow flex-col items-center justify-center space-y-8">
+      <div className="w-full max-w-2xl space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Subject Material</h2>
+          <p className="text-muted-foreground">
+            Add your subject material from resources tab and ask questions from it or talk with Optiq Agent to discuss subject material
+          </p>
+        </div>
+        
+        {/* Content Card */}
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">No material added yet</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upload your study materials from the resources tab to get started
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>Ready to discuss your materials</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Optiq Agent
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Action prompt */}
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Start by typing a message below or uploading resources →
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
