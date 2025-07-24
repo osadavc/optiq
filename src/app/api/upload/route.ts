@@ -22,12 +22,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate file type
+    // Validate file type and length
     const allowedTypes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ];
+    
+    if (!file.type || file.type.length > 255) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or excessively long MIME type' },
+        { status: 400 }
+      );
+    }
     
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(

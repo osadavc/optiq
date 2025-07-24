@@ -381,10 +381,10 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                           </DropdownMenu>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground truncate max-w-[140px]" title={resource.fileType}>
                             {resource.fileType}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground flex-shrink-0">
                             {formatDate(new Date(resource.createdAt))}
                           </p>
                         </div>
