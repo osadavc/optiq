@@ -48,7 +48,7 @@ export const Thread: FC = () => {
         </div>
       </ThreadPrimitive.Viewport>
 
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-inherit py-4">
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-inherit py-4" style={{ marginLeft: "16rem" }}>
         <div className="w-full max-w-[var(--thread-max-width)] px-4 relative">
           <ThreadScrollToBottom />
           <Composer />
