@@ -1,0 +1,31 @@
+# Cursor Rules
+
+## Folder Organization and Imports
+
+When creating folders like `utils`, `components`, `hooks`, or similar utility/feature folders, **DO NOT** create index files (`index.ts`, `index.js`) to re-export everything from that folder.
+
+Instead, import directly from the actual files:
+
+**✅ Preferred:**
+```typescript
+import { formatDate } from './utils/date-formatter'
+import { validateEmail } from './utils/validators'
+import { debounce } from './utils/debounce'
+```
+
+**❌ Avoid:**
+```typescript
+// Don't create utils/index.ts that exports everything
+export * from './date-formatter'
+export * from './validators' 
+export * from './debounce'
+
+// Don't import from index files
+import { formatDate, validateEmail, debounce } from './utils'
+```
+
+This approach:
+- Makes imports more explicit and clear about what's being used
+- Reduces bundle size by avoiding unnecessary re-exports
+- Makes it easier to track dependencies and refactor code
+- Prevents circular dependency issues 
