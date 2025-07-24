@@ -235,16 +235,16 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
   };
 
   return (
-    <div className={cn("fixed right-0 top-0 h-full z-50", className)}>
+    <div className={cn("flex h-full", className)}>
       {/* Sidebar Panel */}
       {isOpen && (
-        <div className="absolute right-12 top-0 h-full bg-background border-l border-r border-border shadow-sm w-80 overflow-auto">
+        <div className="h-full bg-background border-l border-r border-border shadow-sm w-80 overflow-auto">
           {renderTabContent()}
         </div>
       )}
 
       {/* Tab Icons - Always Visible on Right Edge */}
-      <div className="absolute right-0 top-0 h-full bg-background border-l border-border w-12 flex flex-col items-center py-4 space-y-2">
+      <div className="h-full bg-background border-l border-border w-12 flex flex-col items-center py-4 space-y-2 flex-shrink-0">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
