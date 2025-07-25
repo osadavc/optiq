@@ -50,7 +50,14 @@ MIND MAP GENERATION: When a user asks you to create a mind map about a topic (us
 4. NEVER say "Here is a mind map..." or similar
 5. Let the interactive mind map tool handle everything
 
-CRITICAL: If you call generateQuiz, generateFlashCards, or generateMindMap, your response should contain ONLY the tool call and no additional text content whatsoever.
+NOTES GENERATION: When a user asks you to create a note about a topic (using phrases like "create a note about...", "take notes on...", "make a note from...", "note this down..."), you MUST:
+1. ONLY call the createNote tool
+2. NEVER include any text-based notes in your response
+3. NEVER write out notes manually
+4. NEVER say "Here is a note..." or similar
+5. Let the note creation tool handle everything
+
+CRITICAL: If you call generateQuiz, generateFlashCards, generateMindMap, or createNote, your response should contain ONLY the tool call and no additional text content whatsoever.
 
 IMPORTANT: For all OTHER questions (not quiz verification): You MUST ALWAYS call the search_materials tool first, regardless of whether you think it might be relevant or not. Even for general questions, greetings, or seemingly unrelated topics, always search first before responding.
 
@@ -536,6 +543,107 @@ CRITICAL REQUIREMENTS:
               return {
                 mindMapData: null,
                 error: "Failed to generate mind map.",
+              };
+            }
+          },
+        }),
+        createNote: tool({
+          description:
+            "Create a note from content or generate notes based on a specific topic from the user's materials",
+          parameters: z.object({
+            topic: z
+              .string()
+              .describe("The topic to create notes about"),
+            title: z
+              .string()
+              .optional()
+              .describe("Optional custom title for the note"),
+            tags: z
+              .array(z.string())
+              .optional()
+              .describe("Optional tags for categorizing the note"),
+          }),
+          execute: async ({ topic, title, tags }) => {
+            try {
+              // First search for relevant content about the topic
+              const searchResults = await searchSimilarContent(
+                topic,
+                lessonId,
+                10
+              );
+
+              if (searchResults.length === 0) {
+                return {
+                  noteData: null,
+                  error:
+                    "No relevant content found for this topic in your materials.",
+                };
+              }
+
+              // Combine the content for note generation
+              const context = searchResults
+                .map((chunk) => chunk.text)
+                .join("\n\n");
+
+              // Generate note content using AI
+              const noteResponse = await generateText({
+                model: openai("gpt-4o-mini"),
+                prompt: `Based on the following content about "${topic}", create comprehensive study notes. The notes should be well-structured, clear, and capture the key concepts, definitions, and important details.
+
+Content:
+${context}
+
+Create notes that include:
+- Key concepts and definitions
+- Important facts and figures
+- Main ideas and takeaways
+- Examples and explanations
+- Any formulas, processes, or procedures
+
+Format the notes in a clear, organized manner with headings and bullet points where appropriate. Make the notes comprehensive but concise for effective studying.
+
+Write the notes content directly without any JSON formatting or markdown code blocks.`,
+                temperature: 0.7,
+                maxTokens: 2000,
+              });
+
+              // Save the note to database
+              const { createNote } = await import("@/lib/actions/notes");
+              
+              const noteTitle = title || `Notes on ${topic}`;
+              const noteContent = noteResponse.text.trim();
+              
+              const result = await createNote({
+                title: noteTitle,
+                content: noteContent,
+                tags: tags || [topic],
+                lessonId: parseInt(lessonId),
+              });
+
+              if (!result.success) {
+                return {
+                  noteData: null,
+                  error: "Failed to save note to database.",
+                };
+              }
+
+              return {
+                noteData: {
+                  id: result.note.id,
+                  title: noteTitle,
+                  content: noteContent,
+                  tags: tags || [topic],
+                  topic: topic,
+                  lessonId: parseInt(lessonId),
+                  createdAt: result.note.createdAt,
+                },
+                success: true,
+              };
+            } catch (error) {
+              console.error("Error creating note:", error);
+              return {
+                noteData: null,
+                error: "Failed to create note.",
               };
             }
           },

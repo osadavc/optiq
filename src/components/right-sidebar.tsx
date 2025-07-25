@@ -2,24 +2,35 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText, Bot, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, Bot, Upload, Loader2, CheckCircle, AlertCircle, StickyNote, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getResourcesByLessonId } from "@/lib/actions/resources";
+import { getNotesByLessonId, deleteNote } from "@/lib/actions/notes";
 import { PipecatVoiceAgent } from "@/components/pipecat-voice-agent";
 
 interface RightSidebarProps {
   className?: string;
 }
 
-type TabType = "resources" | "ai-assistant";
+type TabType = "resources" | "notes" | "ai-assistant";
 
 interface Resource {
   id: number;
   name: string;
   fileType: string;
   processingStatus: string;
+  lessonId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Note {
+  id: number;
+  title: string;
+  content: string;
+  tags: string | null;
   lessonId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -58,7 +69,9 @@ const getProcessingStatusIcon = (status: string) => {
 export const RightSidebar = ({ className }: RightSidebarProps) => {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isLoadingResources, setIsLoadingResources] = useState(false);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
   const searchParams = useSearchParams();
@@ -67,7 +80,7 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
 
   const isOpen = activeTab !== null;
 
-  // Fetch resources when lesson changes
+  // Fetch resources and notes when lesson changes
   useEffect(() => {
     const fetchResources = async () => {
       if (selectedLessonId) {
@@ -86,7 +99,25 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
       }
     };
 
+    const fetchNotes = async () => {
+      if (selectedLessonId) {
+        setIsLoadingNotes(true);
+        try {
+          const lessonNotes = await getNotesByLessonId(parseInt(selectedLessonId));
+          setNotes(lessonNotes);
+        } catch (error) {
+          console.error("Failed to fetch notes:", error);
+          setNotes([]);
+        } finally {
+          setIsLoadingNotes(false);
+        }
+      } else {
+        setNotes([]);
+      }
+    };
+
     fetchResources();
+    fetchNotes();
   }, [selectedLessonId]);
 
   // Helper function to format date
@@ -179,6 +210,36 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
       setActiveTab(null);
     } else {
       setActiveTab(tab);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    
+    try {
+      const result = await deleteNote(noteId);
+      if (result.success) {
+        // Refresh notes list
+        if (selectedLessonId) {
+          const updatedNotes = await getNotesByLessonId(parseInt(selectedLessonId));
+          setNotes(updatedNotes);
+        }
+      } else {
+        alert('Failed to delete note');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete note');
+    }
+  };
+
+  // Helper function to parse tags
+  const parseTags = (tagsString: string | null): string[] => {
+    if (!tagsString) return [];
+    try {
+      return JSON.parse(tagsString);
+    } catch {
+      return [];
     }
   };
 
@@ -288,6 +349,105 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
             </div>
           </div>
         );
+      case "notes":
+        return (
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-600 tracking-wide">Notes</h3>
+                <p className="text-xs text-muted-foreground">{notes.length} notes</p>
+              </div>
+            </div>
+            
+            {/* Notes List */}
+            <div className="flex-1 overflow-auto">
+              <div className="p-3 space-y-3">
+                {isLoadingNotes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-sm text-muted-foreground">Loading notes...</p>
+                  </div>
+                ) : !selectedLessonId ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <StickyNote className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">Select a lesson to view notes</p>
+                  </div>
+                ) : notes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <StickyNote className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Ask me to create notes on a topic</p>
+                  </div>
+                ) : (
+                  notes.map((note) => {
+                    const tags = parseTags(note.tags);
+                    return (
+                      <div
+                        key={note.id}
+                        className="group p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-card-foreground line-clamp-1">
+                            {note.title}
+                          </h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteNote(note.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground line-clamp-3 mb-3">
+                          {note.content}
+                        </p>
+                        
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {tags.slice(0, 3).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {tags.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                +{tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                          <span>{formatDate(new Date(note.updatedAt))}</span>
+                          <span>{note.content.length} chars</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              
+              {/* Create Note Prompt */}
+              {selectedLessonId && (
+                <div className="p-4 border-t border-border">
+                  <div className="text-center space-y-2 rounded-lg p-4 bg-muted/30">
+                    <div className="w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center">
+                      <StickyNote className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Type &quot;create a note about [topic]&quot; in the chat to generate notes
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case "ai-assistant":
         return <PipecatVoiceAgent />;
       default:
@@ -325,6 +485,25 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
           </TooltipContent>
         </Tooltip>
         
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleTabClick("notes")}
+              className={cn(
+                "h-8 w-8",
+                activeTab === "notes" && "bg-accent text-accent-foreground"
+              )}
+            >
+              <StickyNote className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Notes</p>
+          </TooltipContent>
+        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

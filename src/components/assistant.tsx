@@ -13,6 +13,7 @@ import {
 import { FlashCardsToolUI } from "@/components/assistant-ui/flashcard-ui";
 import { MindMapToolUI } from "@/components/assistant-ui/mindmap-ui-improved";
 import { SearchMaterialsToolUI } from "@/components/assistant-ui/search-ui";
+import { NotesUI } from "@/components/assistant-ui/notes-ui";
 
 interface CitationsContextType {
   citations: Citation[];
@@ -66,6 +67,7 @@ export const Assistant = () => {
         <FlashCardsToolUI />
         <MindMapToolUI />
         <SearchMaterialsToolUI />
+        <NotesUI />
         <div className="h-full w-full">
           <Thread />
         </div>
