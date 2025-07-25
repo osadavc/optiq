@@ -176,19 +176,44 @@ export async function searchSimilarContent(
       filter.lessonId = { $eq: lessonId };
     }
 
-    // For now, return a placeholder response
-    // The actual implementation will depend on configuring Pinecone with an embedding model
-    // Once the index is properly configured with inference, this will work automatically
-
     console.log(`Search query: ${queryText}`);
     console.log(`Lesson filter: ${lessonId || "all lessons"}`);
 
-    // TODO: Implement actual search once Pinecone index is configured with inference
-    // This will require setting up the index with an embedding model through Pinecone's console
+    // Use searchRecords with text input - Pinecone handles embedding automatically
+    const searchResponse = await index.searchRecords({
+      query: {
+        topK,
+        inputs: { text: queryText },
+        filter,
+      },
+      fields: [
+        "text",
+        "fileName",
+        "fileType",
+        "chunkIndex",
+        "resourceId",
+        "lessonId",
+        "title",
+        "author",
+      ],
+    });
 
-    return [];
+    // Return the hits with metadata
+    return searchResponse.result.hits.map((hit: any) => ({
+      id: hit._id,
+      score: hit._score,
+      text: hit.fields?.text || "",
+      fileName: hit.fields?.fileName || "",
+      fileType: hit.fields?.fileType || "",
+      chunkIndex: hit.fields?.chunkIndex || 0,
+      resourceId: hit.fields?.resourceId || 0,
+      lessonId: hit.fields?.lessonId || 0,
+      title: hit.fields?.title || "",
+      author: hit.fields?.author || "",
+    }));
   } catch (error) {
     console.error("Error searching similar content:", error);
-    throw error;
+    // Return empty array instead of throwing to prevent chat from breaking
+    return [];
   }
 }

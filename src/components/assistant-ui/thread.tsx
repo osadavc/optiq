@@ -17,10 +17,14 @@ import {
   SendHorizontalIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getResourcesByLessonId } from "@/lib/actions/resources";
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { Citations, Citation } from "@/components/assistant-ui/citations";
 
 export const Thread: FC = () => {
   return (
@@ -83,6 +87,32 @@ const ThreadWelcome: FC = () => {
 };
 
 const SubjectMaterialDisplay: FC = () => {
+  const searchParams = useSearchParams();
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      const lessonId = searchParams.get('lesson');
+      if (lessonId) {
+        try {
+          const lessonResources = await getResourcesByLessonId(parseInt(lessonId));
+          setResources(lessonResources);
+        } catch (error) {
+          console.error('Error fetching resources:', error);
+        }
+      } else {
+        setResources([]);
+      }
+      setLoading(false);
+    };
+
+    fetchResources();
+  }, [searchParams]);
+
+  const hasResources = resources.length > 0;
+  const completedResources = resources.filter(r => r.processingStatus === 'completed');
+
   return (
     <div className="flex w-full flex-grow flex-col items-center justify-center space-y-8">
       <div className="w-full max-w-2xl space-y-6">
@@ -90,7 +120,10 @@ const SubjectMaterialDisplay: FC = () => {
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight">Subject Material</h2>
           <p className="text-muted-foreground">
-            Add your subject material from resources tab and ask questions from it or talk with Optiq Agent to discuss subject material
+            {hasResources 
+              ? "Your uploaded materials are ready for discussion with Optiq Agent" 
+              : "Add your subject material from resources tab and ask questions from it or talk with Optiq Agent to discuss subject material"
+            }
           </p>
         </div>
         
@@ -114,10 +147,28 @@ const SubjectMaterialDisplay: FC = () => {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">No material added yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Upload your study materials from the resources tab to get started
-                </p>
+                {loading ? (
+                  <>
+                    <h3 className="font-medium">Loading materials...</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Checking for uploaded content
+                    </p>
+                  </>
+                ) : hasResources ? (
+                  <>
+                    <h3 className="font-medium">{completedResources.length} materials ready</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {resources.map(r => r.name).join(', ')}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-medium">No material added yet</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Upload your study materials from the resources tab to get started
+                    </p>
+                  </>
+                )}
               </div>
             </div>
             
@@ -137,7 +188,12 @@ const SubjectMaterialDisplay: FC = () => {
                       d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>Ready to discuss your materials</span>
+                  <span>
+                    {hasResources 
+                      ? "Ready to discuss your materials" 
+                      : "Ready to discuss your materials"
+                    }
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Optiq Agent
@@ -150,7 +206,10 @@ const SubjectMaterialDisplay: FC = () => {
         {/* Action prompt */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            Start by typing a message below or uploading resources →
+            {hasResources 
+              ? "Ask questions about your materials below ↓"
+              : "Start by typing a message below or uploading resources →"
+            }
           </p>
         </div>
       </div>
@@ -253,6 +312,7 @@ const AssistantMessage: FC = () => {
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+        {/* Citations will be added here in a future update */}
       </div>
 
       <AssistantActionBar />
