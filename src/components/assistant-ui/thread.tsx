@@ -319,7 +319,7 @@ const AssistantMessage: FC = () => {
         <MessagePrimitive.Parts
           components={{
             Text: MarkdownText,
-            ToolGroup: ToolGroup,
+            // ToolGroup: ToolGroup,
           }}
         />
         {/* Citations will be added here in a future update */}

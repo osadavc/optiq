@@ -6,6 +6,7 @@ import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { useSearchParams } from "next/navigation";
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Citation } from "@/components/assistant-ui/citations";
+import { QuizToolUI, VerifyAnswerToolUI } from "@/components/assistant-ui/quiz-ui";
 
 interface CitationsContextType {
   citations: Citation[];
@@ -52,6 +53,8 @@ export const Assistant = () => {
   return (
     <CitationsProvider>
       <AssistantRuntimeProvider runtime={runtime}>
+        <QuizToolUI />
+        <VerifyAnswerToolUI />
         <div className="h-full w-full">
           <Thread />
         </div>
