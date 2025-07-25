@@ -43,7 +43,14 @@ FLASH CARDS GENERATION: When a user asks you to create flash cards about a topic
 4. NEVER say "Here are some flash cards..." or similar
 5. Let the interactive flash cards tool handle everything
 
-CRITICAL: If you call generateQuiz or generateFlashCards, your response should contain ONLY the tool call and no additional text content whatsoever.
+MIND MAP GENERATION: When a user asks you to create a mind map about a topic (using phrases like "create a mind map for...", "make a mind map of...", "generate mind map on...", "mind map from..."), you MUST:
+1. ONLY call the generateMindMap tool
+2. NEVER include any text-based mind maps in your response
+3. NEVER write out mind maps manually
+4. NEVER say "Here is a mind map..." or similar
+5. Let the interactive mind map tool handle everything
+
+CRITICAL: If you call generateQuiz, generateFlashCards, or generateMindMap, your response should contain ONLY the tool call and no additional text content whatsoever.
 
 IMPORTANT: For all OTHER questions (not quiz verification): You MUST ALWAYS call the search_materials tool first, regardless of whether you think it might be relevant or not. Even for general questions, greetings, or seemingly unrelated topics, always search first before responding.
 
@@ -331,6 +338,204 @@ Make sure the flash cards:
               return {
                 flashCardsData: null,
                 error: "Failed to generate flash cards.",
+              };
+            }
+          },
+        }),
+        generateMindMap: tool({
+          description:
+            "Generate an interactive mind map based on a specific topic from the user's materials",
+          parameters: z.object({
+            topic: z.string().describe("The topic to create a mind map for"),
+            depth: z
+              .number()
+              .optional()
+              .default(3)
+              .describe(
+                "How many levels deep the mind map should go (default 3)"
+              ),
+          }),
+          execute: async ({ topic, depth = 3 }) => {
+            try {
+              // First search for relevant content about the topic
+              const searchResults = await searchSimilarContent(
+                topic,
+                lessonId,
+                25
+              );
+
+              if (searchResults.length === 0) {
+                return {
+                  mindMapData: null,
+                  error:
+                    "No relevant content found for this topic in your materials.",
+                };
+              }
+
+              // Combine the content for mind map generation
+              const context = searchResults
+                .map((chunk) => chunk.text)
+                .join("\n\n");
+
+              // Generate mind map using AI
+              const mindMapResponse = await generateText({
+                model: openai("gpt-4o-mini"),
+                prompt: `Based on the following content about "${topic}", create a hierarchical mind map with ${depth} levels of depth. The mind map should capture the key concepts, relationships, and details.
+
+Content:
+${context}
+
+IMPORTANT: Respond with ONLY a valid JSON object, no markdown formatting or extra text.
+
+{
+  "topic": "${topic}",
+  "centerNode": {
+    "id": "root",
+    "title": "${topic}",
+    "description": "Brief description of the main topic",
+    "x": 400,
+    "y": 300,
+    "level": 0,
+    "color": "#3B82F6",
+    "expanded": true
+  },
+  "nodes": [
+    {
+      "id": "node1",
+      "title": "Main Concept 1",
+      "description": "Description of main concept",
+      "x": 200,
+      "y": 200,
+      "level": 1,
+      "parentId": "root",
+      "color": "#10B981",
+      "expanded": true
+    },
+    {
+      "id": "node2", 
+      "title": "Main Concept 2",
+      "description": "Description of another concept",
+      "x": 600,
+      "y": 200,
+      "level": 1,
+      "parentId": "root",
+      "color": "#10B981",
+      "expanded": true
+    },
+    {
+      "id": "node3",
+      "title": "Sub Concept",
+      "description": "Description of sub concept",
+      "x": 150,
+      "y": 100,
+      "level": 2,
+      "parentId": "node1",
+      "color": "#F59E0B",
+      "expanded": true
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn1",
+      "sourceId": "root",
+      "targetId": "node1",
+      "label": "contains",
+      "type": "hierarchical"
+    },
+    {
+      "id": "conn2",
+      "sourceId": "root",
+      "targetId": "node2", 
+      "label": "contains",
+      "type": "hierarchical"
+    },
+    {
+      "id": "conn3",
+      "sourceId": "node1",
+      "targetId": "node3",
+      "label": "includes",
+      "type": "hierarchical"
+    }
+  ]
+}
+
+CRITICAL REQUIREMENTS:
+- Create at least 5-8 nodes with the central node
+- EVERY node (except root) must have a connection FROM its parent or TO the root
+- Connection sourceId and targetId must exactly match node ids
+- Use hierarchical connections between parent-child nodes
+- Place nodes at different x,y coordinates in a radial pattern around center
+- Use different colors for different levels: Level 0=#3B82F6, Level 1=#10B981, Level 2=#F59E0B, Level 3=#EF4444
+- Make sure all node IDs are unique and connections reference valid node IDs`,
+                temperature: 0.7,
+                maxTokens: 3500,
+              });
+
+              // Clean the response text to extract JSON
+              let responseText = mindMapResponse.text.trim();
+
+              // Remove markdown code blocks if present
+              if (responseText.startsWith("```json")) {
+                responseText = responseText
+                  .replace(/^```json\s*/, "")
+                  .replace(/\s*```$/, "");
+              } else if (responseText.startsWith("```")) {
+                responseText = responseText
+                  .replace(/^```\s*/, "")
+                  .replace(/\s*```$/, "");
+              }
+
+              // Try to find JSON object in the response
+              const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                responseText = jsonMatch[0];
+              }
+
+              const mindMapData = JSON.parse(responseText);
+
+              // Create ID mapping to maintain relationships
+              const timestamp = Date.now();
+              const nodeIdMap = new Map();
+              nodeIdMap.set(mindMapData.centerNode.id, `node_${timestamp}_root`);
+              
+              mindMapData.nodes.forEach((node: any, index: number) => {
+                nodeIdMap.set(node.id, `node_${timestamp}_${index + 1}`);
+              });
+
+              return {
+                mindMapData: {
+                  topic: mindMapData.topic,
+                  centerNode: {
+                    ...mindMapData.centerNode,
+                    id: nodeIdMap.get(mindMapData.centerNode.id),
+                  },
+                  nodes: mindMapData.nodes.map(
+                    (node: any) => ({
+                      ...node,
+                      id: nodeIdMap.get(node.id),
+                      parentId: node.parentId ? nodeIdMap.get(node.parentId) : undefined,
+                    })
+                  ),
+                  connections: mindMapData.connections.map(
+                    (conn: any, index: number) => ({
+                      ...conn,
+                      id: `conn_${timestamp}_${index}`,
+                      sourceId: nodeIdMap.get(conn.sourceId),
+                      targetId: nodeIdMap.get(conn.targetId),
+                    })
+                  ),
+                  selectedNode: null,
+                  zoom: 1,
+                  panX: 0,
+                  panY: 0,
+                },
+                completed: false,
+              };
+            } catch (error) {
+              console.error("Error generating mind map:", error);
+              return {
+                mindMapData: null,
+                error: "Failed to generate mind map.",
               };
             }
           },

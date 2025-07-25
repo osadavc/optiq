@@ -6,8 +6,12 @@ import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { useSearchParams } from "next/navigation";
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Citation } from "@/components/assistant-ui/citations";
-import { QuizToolUI, VerifyAnswerToolUI } from "@/components/assistant-ui/quiz-ui";
+import {
+  QuizToolUI,
+  VerifyAnswerToolUI,
+} from "@/components/assistant-ui/quiz-ui";
 import { FlashCardsToolUI } from "@/components/assistant-ui/flashcard-ui";
+import { MindMapToolUI } from "@/components/assistant-ui/mindmap-ui";
 import { SearchMaterialsToolUI } from "@/components/assistant-ui/search-ui";
 
 interface CitationsContextType {
@@ -15,7 +19,9 @@ interface CitationsContextType {
   setCitations: (citations: Citation[]) => void;
 }
 
-const CitationsContext = createContext<CitationsContextType | undefined>(undefined);
+const CitationsContext = createContext<CitationsContextType | undefined>(
+  undefined
+);
 
 export const useCitations = () => {
   const context = useContext(CitationsContext);
@@ -41,7 +47,7 @@ const CitationsProvider = ({ children }: CitationsProviderProps) => {
 
 export const Assistant = () => {
   const searchParams = useSearchParams();
-  const lessonId = searchParams.get('lesson');
+  const lessonId = searchParams.get("lesson");
 
   const runtime = useChatRuntime({
     api: "/api/chat",
@@ -58,6 +64,7 @@ export const Assistant = () => {
         <QuizToolUI />
         <VerifyAnswerToolUI />
         <FlashCardsToolUI />
+        <MindMapToolUI />
         <SearchMaterialsToolUI />
         <div className="h-full w-full">
           <Thread />
