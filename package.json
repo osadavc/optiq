@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "wipe-pinecone": "tsx scripts/wipe-pinecone.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.23",
@@ -37,8 +38,8 @@
     "lucide-react": "^0.525.0",
     "mammoth": "^1.9.1",
     "next": "15.4.3",
+    "officeparser": "^5.2.0",
     "pdf-parse": "^1.1.1",
-    "pptx2json": "^0.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "remark-gfm": "^4.0.1",
@@ -55,6 +56,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.4.3",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5"
   },

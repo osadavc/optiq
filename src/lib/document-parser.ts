@@ -1,6 +1,6 @@
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
-import pptx2json from 'pptx2json';
+import officeParser from 'officeparser';
 
 export interface ParsedDocument {
   content: string;
@@ -61,28 +61,12 @@ async function parseDOCX(buffer: Buffer, fileName: string): Promise<ParsedDocume
 
 async function parsePPTX(buffer: Buffer, fileName: string): Promise<ParsedDocument> {
   try {
-    // pptx2json expects a file path, so we'll need to write to temp file
-    // For now, let's use a simpler approach and extract what we can
-    const result = await pptx2json.toJson(buffer);
+    const config = {
+      newlineDelimiter: '\n',
+      ignoreNotes: false // Include notes in the parsed text
+    };
     
-    // Extract text from slides
-    let content = '';
-    if (result && typeof result === 'object' && 'slides' in result) {
-      const slides = result.slides as any[];
-      for (const slide of slides) {
-        if (slide.textContent) {
-          content += slide.textContent + '\n\n';
-        }
-        // Extract text from shapes if available
-        if (slide.shapes) {
-          for (const shape of slide.shapes) {
-            if (shape.text) {
-              content += shape.text + '\n';
-            }
-          }
-        }
-      }
-    }
+    const content = await officeParser.parseOfficeAsync(buffer, config);
     
     return {
       content: content.trim(),

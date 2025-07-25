@@ -2,11 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText, Bot, Mic, MicOff, Upload, MoreVertical, Download, Eye, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, Bot, Mic, MicOff, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getResourcesByLessonId } from "@/lib/actions/resources";
 
 interface RightSidebarProps {
@@ -358,27 +357,6 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                               </TooltipContent>
                             </Tooltip>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <MoreVertical className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem>
-                                <Eye className="h-3 w-3 mr-2" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Download className="h-3 w-3 mr-2" />
-                                Download
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </div>
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-muted-foreground truncate max-w-[140px]" title={resource.fileType}>
