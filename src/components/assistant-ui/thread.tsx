@@ -5,7 +5,8 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
-import type { FC } from "react";
+import type { FC, PropsWithChildren } from "react";
+import React from "react";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -93,13 +94,15 @@ const SubjectMaterialDisplay: FC = () => {
 
   useEffect(() => {
     const fetchResources = async () => {
-      const lessonId = searchParams.get('lesson');
+      const lessonId = searchParams.get("lesson");
       if (lessonId) {
         try {
-          const lessonResources = await getResourcesByLessonId(parseInt(lessonId));
+          const lessonResources = await getResourcesByLessonId(
+            parseInt(lessonId)
+          );
           setResources(lessonResources);
         } catch (error) {
-          console.error('Error fetching resources:', error);
+          console.error("Error fetching resources:", error);
         }
       } else {
         setResources([]);
@@ -111,22 +114,25 @@ const SubjectMaterialDisplay: FC = () => {
   }, [searchParams]);
 
   const hasResources = resources.length > 0;
-  const completedResources = resources.filter(r => r.processingStatus === 'completed');
+  const completedResources = resources.filter(
+    (r) => r.processingStatus === "completed"
+  );
 
   return (
     <div className="flex w-full flex-grow flex-col items-center justify-center space-y-8">
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Subject Material</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Subject Material
+          </h2>
           <p className="text-muted-foreground">
-            {hasResources 
-              ? "Your uploaded materials are ready for discussion with Optiq Agent" 
-              : "Add your subject material from resources tab and ask questions from it or talk with Optiq Agent to discuss subject material"
-            }
+            {hasResources
+              ? "Your uploaded materials are ready for discussion with Optiq Agent"
+              : "Add your subject material from resources tab and ask questions from it or talk with Optiq Agent to discuss subject material"}
           </p>
         </div>
-        
+
         {/* Content Card */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="p-6">
@@ -156,22 +162,25 @@ const SubjectMaterialDisplay: FC = () => {
                   </>
                 ) : hasResources ? (
                   <>
-                    <h3 className="font-medium">{completedResources.length} materials ready</h3>
+                    <h3 className="font-medium">
+                      {completedResources.length} materials ready
+                    </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {resources.map(r => r.name).join(', ')}
+                      {resources.map((r) => r.name).join(", ")}
                     </p>
                   </>
                 ) : (
                   <>
                     <h3 className="font-medium">No material added yet</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Upload your study materials from the resources tab to get started
+                      Upload your study materials from the resources tab to get
+                      started
                     </p>
                   </>
                 )}
               </div>
             </div>
-            
+
             <div className="mt-6 pt-6 border-t">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -189,27 +198,23 @@ const SubjectMaterialDisplay: FC = () => {
                     />
                   </svg>
                   <span>
-                    {hasResources 
-                      ? "Ready to discuss your materials" 
-                      : "Ready to discuss your materials"
-                    }
+                    {hasResources
+                      ? "Ready to discuss your materials"
+                      : "Ready to discuss your materials"}
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Optiq Agent
-                </div>
+                <div className="text-xs text-muted-foreground">Optiq Agent</div>
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Action prompt */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            {hasResources 
+            {hasResources
               ? "Ask questions about your materials below ↓"
-              : "Start by typing a message below or uploading resources →"
-            }
+              : "Start by typing a message below or uploading resources →"}
           </p>
         </div>
       </div>
@@ -311,7 +316,12 @@ const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
-        <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+        <MessagePrimitive.Parts
+          components={{
+            Text: MarkdownText,
+            ToolGroup: ToolGroup,
+          }}
+        />
         {/* Citations will be added here in a future update */}
       </div>
 
@@ -358,7 +368,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
       hideWhenSingleBranch
       className={cn(
         "text-muted-foreground inline-flex items-center text-xs",
-        className,
+        className
       )}
       {...rest}
     >
@@ -376,6 +386,18 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
         </TooltipIconButton>
       </BranchPickerPrimitive.Next>
     </BranchPickerPrimitive.Root>
+  );
+};
+
+const ToolGroup: FC<
+  PropsWithChildren<{ startIndex: number; endIndex: number }>
+> = ({ startIndex, endIndex, children }) => {
+  return (
+    <div className="bg-muted/50 my-2 rounded-lg border p-4">
+      <div className="text-muted-foreground text-sm">
+        Looking through your materials...
+      </div>
+    </div>
   );
 };
 

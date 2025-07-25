@@ -87,6 +87,7 @@ Remember: ALWAYS call search_materials first, then respond based on the results.
           },
         }),
       },
+      toolCallStreaming: true,
     });
 
     return result.toDataStreamResponse();
