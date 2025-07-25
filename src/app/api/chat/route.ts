@@ -36,7 +36,14 @@ QUIZ GENERATION: When a user asks you to generate questions or create a quiz abo
 4. NEVER say "Here are some questions..." or similar
 5. Let the interactive quiz tool handle everything
 
-CRITICAL: If you call generateQuiz, your response should contain ONLY the tool call and no additional text content whatsoever.
+FLASH CARDS GENERATION: When a user asks you to create flash cards about a topic (using phrases like "create flash cards about...", "make flash cards for...", "generate flash cards on...", "flash cards from..."), you MUST:
+1. ONLY call the generateFlashCards tool (optionally with cardCount parameter if user specifies a number)
+2. NEVER include any text-based flash cards in your response
+3. NEVER write out flash cards manually
+4. NEVER say "Here are some flash cards..." or similar
+5. Let the interactive flash cards tool handle everything
+
+CRITICAL: If you call generateQuiz or generateFlashCards, your response should contain ONLY the tool call and no additional text content whatsoever.
 
 IMPORTANT: For all OTHER questions (not quiz verification): You MUST ALWAYS call the search_materials tool first, regardless of whether you think it might be relevant or not. Even for general questions, greetings, or seemingly unrelated topics, always search first before responding.
 
@@ -212,6 +219,118 @@ Make sure questions are challenging but fair, and based directly on the provided
               return {
                 quizData: null,
                 error: "Failed to generate quiz questions.",
+              };
+            }
+          },
+        }),
+        generateFlashCards: tool({
+          description:
+            "Generate flash cards based on a specific topic from the user's materials",
+          parameters: z.object({
+            topic: z
+              .string()
+              .describe("The topic to generate flash cards about"),
+            cardCount: z
+              .number()
+              .optional()
+              .default(10)
+              .describe("Number of flash cards to generate (default 10)"),
+          }),
+          execute: async ({ topic, cardCount = 10 }) => {
+            try {
+              // First search for relevant content about the topic
+              const searchResults = await searchSimilarContent(
+                topic,
+                lessonId,
+                15
+              );
+
+              if (searchResults.length === 0) {
+                return {
+                  flashCardsData: null,
+                  error:
+                    "No relevant content found for this topic in your materials.",
+                };
+              }
+
+              // Combine the content for flash cards generation
+              const context = searchResults
+                .map((chunk) => chunk.text)
+                .join("\n\n");
+
+              // Generate flash cards using AI
+              const flashCardsResponse = await generateText({
+                model: openai("gpt-4o-mini"),
+                prompt: `Based on the following content about "${topic}", create ${cardCount} flash cards for studying. Each flash card should have a concise question/prompt on the front and a clear, comprehensive answer on the back.
+
+Content:
+${context}
+
+IMPORTANT: Respond with ONLY a valid JSON object, no markdown formatting or extra text.
+
+{
+  "topic": "${topic}",
+  "cards": [
+    {
+      "id": "unique_id",
+      "front": "Question or prompt for the front of the card",
+      "back": "Detailed answer or explanation for the back of the card",
+      "difficulty": "easy|medium|hard"
+    }
+  ]
+}
+
+Make sure the flash cards:
+- Cover key concepts from the provided content
+- Have clear, concise questions on the front
+- Provide comprehensive but not overwhelming answers on the back
+- Vary in difficulty level
+- Are directly based on the provided content`,
+                temperature: 0.7,
+                maxTokens: 2500,
+              });
+
+              // Clean the response text to extract JSON
+              let responseText = flashCardsResponse.text.trim();
+
+              // Remove markdown code blocks if present
+              if (responseText.startsWith("```json")) {
+                responseText = responseText
+                  .replace(/^```json\s*/, "")
+                  .replace(/\s*```$/, "");
+              } else if (responseText.startsWith("```")) {
+                responseText = responseText
+                  .replace(/^```\s*/, "")
+                  .replace(/\s*```$/, "");
+              }
+
+              // Try to find JSON object in the response
+              const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                responseText = jsonMatch[0];
+              }
+
+              const flashCardsData = JSON.parse(responseText);
+
+              return {
+                flashCardsData: {
+                  topic: flashCardsData.topic,
+                  cards: flashCardsData.cards.map(
+                    (card: any, index: number) => ({
+                      ...card,
+                      id: `card_${Date.now()}_${index}`,
+                    })
+                  ),
+                  currentCardIndex: 0,
+                  totalCards: flashCardsData.cards.length,
+                },
+                completed: false,
+              };
+            } catch (error) {
+              console.error("Error generating flash cards:", error);
+              return {
+                flashCardsData: null,
+                error: "Failed to generate flash cards.",
               };
             }
           },

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Citation } from "@/components/assistant-ui/citations";
 import { QuizToolUI, VerifyAnswerToolUI } from "@/components/assistant-ui/quiz-ui";
+import { FlashCardsToolUI } from "@/components/assistant-ui/flashcard-ui";
 import { SearchMaterialsToolUI } from "@/components/assistant-ui/search-ui";
 
 interface CitationsContextType {
@@ -56,6 +57,7 @@ export const Assistant = () => {
       <AssistantRuntimeProvider runtime={runtime}>
         <QuizToolUI />
         <VerifyAnswerToolUI />
+        <FlashCardsToolUI />
         <SearchMaterialsToolUI />
         <div className="h-full w-full">
           <Thread />
