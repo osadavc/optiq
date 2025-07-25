@@ -2,12 +2,14 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText, Bot, Upload, Loader2, CheckCircle, AlertCircle, StickyNote, Trash2 } from "lucide-react";
+import { FileText, Bot, Upload, Loader2, CheckCircle, AlertCircle, StickyNote, Trash2, ExternalLinkIcon, TagIcon, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getResourcesByLessonId } from "@/lib/actions/resources";
 import { getNotesByLessonId, deleteNote } from "@/lib/actions/notes";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { PipecatVoiceAgent } from "@/components/pipecat-voice-agent";
 
 interface RightSidebarProps {
@@ -73,12 +75,36 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
   const [isLoadingResources, setIsLoadingResources] = useState(false);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   
   const searchParams = useSearchParams();
   const selectedLessonId = searchParams.get('lesson');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOpen = activeTab !== null;
+
+  // Function to refresh notes
+  const refreshNotes = async () => {
+    if (selectedLessonId) {
+      setIsLoadingNotes(true);
+      try {
+        const lessonNotes = await getNotesByLessonId(parseInt(selectedLessonId));
+        setNotes(lessonNotes);
+      } catch (error) {
+        console.error("Failed to fetch notes:", error);
+        setNotes([]);
+      } finally {
+        setIsLoadingNotes(false);
+      }
+    }
+  };
+
+  // Expose refresh function globally
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).refreshNotes = refreshNotes;
+    }
+  }, [selectedLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch resources and notes when lesson changes
   useEffect(() => {
@@ -243,6 +269,116 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
     }
   };
 
+  // Note Modal Component
+  const NoteModal = ({ note, isOpen, onClose }: { note: Note; isOpen: boolean; onClose: () => void }) => {
+    if (!isOpen) return null;
+
+    const formatDate = (date: Date) => {
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      
+      if (diffInDays === 0) {
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        if (diffInHours === 0) {
+          const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+          return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`;
+        }
+        return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+      } else if (diffInDays === 1) {
+        return '1 day ago';
+      } else if (diffInDays < 7) {
+        return `${diffInDays} days ago`;
+      } else if (diffInDays < 30) {
+        const diffInWeeks = Math.floor(diffInDays / 7);
+        return diffInWeeks === 1 ? '1 week ago' : `${diffInWeeks} weeks ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    };
+
+    const tags = parseTags(note.tags);
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-background border border-border rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">{note.title}</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <CalendarIcon className="h-4 w-4" />
+                <span>{formatDate(new Date(note.createdAt))}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                ✕
+              </Button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="prose prose-base max-w-none text-foreground [&>*]:mb-4 [&>*:last-child]:mb-0 [&>p]:leading-relaxed [&>h1]:mb-6 [&>h2]:mb-5 [&>h3]:mb-4 [&>ul]:my-4 [&>ol]:my-4 [&>blockquote]:my-6 [&>pre]:my-6">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <p className="mb-4 leading-relaxed text-foreground">{children}</p>,
+                  h1: ({ children }) => <h1 className="text-2xl font-bold mb-6 text-foreground">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-semibold mb-5 text-foreground">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-lg font-semibold mb-4 text-foreground">{children}</h3>,
+                  h4: ({ children }) => <h4 className="text-base font-semibold mb-3 text-foreground">{children}</h4>,
+                  ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
+                  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-muted-foreground/20 pl-4 py-2 my-6 italic bg-muted/20 rounded-r">{children}</blockquote>,
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
+                    ) : (
+                      <code className={className}>{children}</code>
+                    );
+                  },
+                  pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg my-6 overflow-x-auto">{children}</pre>,
+                }}
+              >
+                {note.content}
+              </ReactMarkdown>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {tags.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <TagIcon className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-md"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>{note.content.length} characters</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -384,19 +520,26 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                     return (
                       <div
                         key={note.id}
-                        className="group p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        className="group p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedNote(note)}
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="text-sm font-semibold text-card-foreground line-clamp-1">
-                            {note.title}
-                          </h4>
+                          <div className="flex items-center gap-2 flex-1">
+                            <h4 className="text-sm font-semibold text-card-foreground line-clamp-1">
+                              {note.title}
+                            </h4>
+                            <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteNote(note.id);
+                            }}
                           >
-                            <Trash2 className="h-3 w-3 text-red-500" />
+                            <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         </div>
                         
@@ -409,13 +552,13 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
                             {tags.slice(0, 3).map((tag, index) => (
                               <span
                                 key={index}
-                                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                                className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-md"
                               >
                                 {tag}
                               </span>
                             ))}
                             {tags.length > 3 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+                              <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-md">
                                 +{tags.length - 3}
                               </span>
                             )}
@@ -523,6 +666,15 @@ export const RightSidebar = ({ className }: RightSidebarProps) => {
           </TooltipContent>
         </Tooltip>
       </div>
+
+      {/* Note Modal */}
+      {selectedNote && (
+        <NoteModal
+          note={selectedNote}
+          isOpen={!!selectedNote}
+          onClose={() => setSelectedNote(null)}
+        />
+      )}
     </div>
   );
 };
