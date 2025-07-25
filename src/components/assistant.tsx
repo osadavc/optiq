@@ -11,7 +11,7 @@ import {
   VerifyAnswerToolUI,
 } from "@/components/assistant-ui/quiz-ui";
 import { FlashCardsToolUI } from "@/components/assistant-ui/flashcard-ui";
-import { MindMapToolUI } from "@/components/assistant-ui/mindmap-ui";
+import { MindMapToolUI } from "@/components/assistant-ui/mindmap-ui-improved";
 import { SearchMaterialsToolUI } from "@/components/assistant-ui/search-ui";
 
 interface CitationsContextType {
