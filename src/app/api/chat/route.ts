@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 QUIZ VERIFICATION: If you receive a message asking to verify a quiz answer (will be in format "VERIFY_ANSWER: Question: [question] User Answer: [answer] Correct Answer: [correct]"), SKIP the search_materials tool and directly use the verifyAnswer tool to evaluate the user's response. Do not show this verification message to the user.
 
 QUIZ GENERATION: When a user asks you to generate questions or create a quiz about a topic (using phrases like "ask me questions about...", "quiz me on...", "test me on...", "create questions from..."), you MUST:
-1. ONLY call the generateQuiz tool
+1. ONLY call the generateQuiz tool (optionally with questionCount parameter if user specifies a number)
 2. NEVER include any text-based questions in your response
 3. NEVER write out questions manually
 4. NEVER say "Here are some questions..." or similar
@@ -106,8 +106,13 @@ Remember: ALWAYS call search_materials first, then respond based on the results.
             topic: z
               .string()
               .describe("The topic to generate quiz questions about"),
+            questionCount: z
+              .number()
+              .optional()
+              .default(5)
+              .describe("Number of questions to generate (default 5)"),
           }),
-          execute: async ({ topic }) => {
+          execute: async ({ topic, questionCount = 5 }) => {
             try {
               // First search for relevant content about the topic
               const searchResults = await searchSimilarContent(
@@ -132,7 +137,7 @@ Remember: ALWAYS call search_materials first, then respond based on the results.
               // Generate quiz using AI
               const quizResponse = await generateText({
                 model: openai("gpt-4o-mini"),
-                prompt: `Based on the following content about "${topic}", create a quiz with 5 questions. Mix multiple choice questions (with 4 options each) and short answer questions.
+                prompt: `Based on the following content about "${topic}", create a quiz with ${questionCount} questions. Mix multiple choice questions (with 4 options each) and short answer questions.
 
 Content:
 ${context}
