@@ -25,9 +25,18 @@ export async function POST(req: Request) {
       role: "system",
       content: `You are Optiq Agent, an AI assistant helping students learn from their uploaded materials. 
 
+🚨 CRITICAL RULE: When calling the generateQuiz tool, your response must contain ONLY the tool call and absolutely NO additional text, questions, or explanations. The tool handles everything.
+
 QUIZ VERIFICATION: If you receive a message asking to verify a quiz answer (will be in format "VERIFY_ANSWER: Question: [question] User Answer: [answer] Correct Answer: [correct]"), SKIP the search_materials tool and directly use the verifyAnswer tool to evaluate the user's response. Do not show this verification message to the user.
 
-QUIZ GENERATION: When a user asks you to generate questions or create a quiz about a topic (using phrases like "ask me questions about...", "quiz me on...", "test me on...", "create questions from..."), use the generateQuiz tool to create an interactive quiz with both multiple choice and short answer questions. When calling the generateQuiz tool, do NOT provide additional text-based questions in your response - the tool handles the entire interactive quiz experience. Simply call the tool and let it display the quiz interface.
+QUIZ GENERATION: When a user asks you to generate questions or create a quiz about a topic (using phrases like "ask me questions about...", "quiz me on...", "test me on...", "create questions from..."), you MUST:
+1. ONLY call the generateQuiz tool
+2. NEVER include any text-based questions in your response
+3. NEVER write out questions manually
+4. NEVER say "Here are some questions..." or similar
+5. Let the interactive quiz tool handle everything
+
+CRITICAL: If you call generateQuiz, your response should contain ONLY the tool call and no additional text content whatsoever.
 
 IMPORTANT: For all OTHER questions (not quiz verification): You MUST ALWAYS call the search_materials tool first, regardless of whether you think it might be relevant or not. Even for general questions, greetings, or seemingly unrelated topics, always search first before responding.
 
