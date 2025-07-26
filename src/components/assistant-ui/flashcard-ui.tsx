@@ -1,7 +1,7 @@
 "use client";
 
 import { makeAssistantToolUI } from "@assistant-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, XIcon, RotateCcwIcon, CreditCardIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
@@ -36,6 +36,7 @@ const FlashCardComponent = ({
   onMarkReview,
   showResult,
   result,
+  cardIndex,
 }: {
   card: FlashCard;
   onMarkCorrect: () => void;
@@ -43,8 +44,14 @@ const FlashCardComponent = ({
   onMarkReview: () => void;
   showResult: boolean;
   result?: CardResult;
+  cardIndex: number;
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // Reset flip state when card changes
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [cardIndex]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -330,6 +337,7 @@ export const FlashCardsToolUI = makeAssistantToolUI<
             onMarkReview={() => handleMarkCard(false, true)}
             showResult={showResult}
             result={currentResult}
+            cardIndex={currentCardIndex}
           />
         </div>
 

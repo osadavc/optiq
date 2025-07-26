@@ -57,7 +57,7 @@ NOTES GENERATION: When a user asks you to create a note about a topic (using phr
 4. NEVER say "Here is a note..." or similar
 5. Let the note creation tool handle everything
 
-CRITICAL: If you call generateQuiz, generateFlashCards, generateMindMap, or createNote, your response should contain ONLY the tool call and no additional text content whatsoever.
+CRITICAL: If you call generateQuiz, generateFlashCards, generateMindMap, or createNote, your response should contain ONLY the tool call and no additional text content whatsoever. Do not include any explanatory text, descriptions, instructions, or commentary before or after the tool call. The UI components handle all user interaction and display.
 
 IMPORTANT: For all OTHER questions (not quiz verification): You MUST ALWAYS call the search_materials tool first, regardless of whether you think it might be relevant or not. Even for general questions, greetings, or seemingly unrelated topics, always search first before responding.
 

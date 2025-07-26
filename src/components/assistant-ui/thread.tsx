@@ -23,42 +23,10 @@ import { useEffect, useState } from "react";
 import { getResourcesByLessonId } from "@/lib/actions/resources";
 
 import { Button } from "@/components/ui/button";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Citations, Citation } from "@/components/assistant-ui/citations";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 
-// Custom Text component using ReactMarkdown
-const MarkdownTextComponent = ({ children }: { children: string }) => {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      className="prose prose-base max-w-none text-foreground [&>*]:mb-4 [&>*:last-child]:mb-0 [&>p]:leading-relaxed [&>h1]:mb-6 [&>h2]:mb-5 [&>h3]:mb-4 [&>ul]:my-4 [&>ol]:my-4 [&>blockquote]:my-6 [&>pre]:my-6"
-      components={{
-        p: ({ children }) => <p className="mb-4 leading-relaxed text-foreground">{children}</p>,
-        h1: ({ children }) => <h1 className="text-2xl font-bold mb-6 text-foreground">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-xl font-semibold mb-5 text-foreground">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-lg font-semibold mb-4 text-foreground">{children}</h3>,
-        h4: ({ children }) => <h4 className="text-base font-semibold mb-3 text-foreground">{children}</h4>,
-        ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
-        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-        blockquote: ({ children }) => <blockquote className="border-l-4 border-muted-foreground/20 pl-4 py-2 my-6 italic bg-muted/20 rounded-r">{children}</blockquote>,
-        code: ({ children, className }) => {
-          const isInline = !className;
-          return isInline ? (
-            <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
-          ) : (
-            <code className={className}>{children}</code>
-          );
-        },
-        pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg my-6 overflow-x-auto">{children}</pre>,
-      }}
-    >
-      {children}
-    </ReactMarkdown>
-  );
-};
 
 export const Thread: FC = () => {
   return (
@@ -351,7 +319,7 @@ const AssistantMessage: FC = () => {
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Parts
           components={{
-            Text: MarkdownTextComponent,
+            Text: MarkdownText,
             // ToolGroup: ToolGroup,
           }}
         />
